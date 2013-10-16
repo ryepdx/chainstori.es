@@ -62,6 +62,9 @@ class UserIntegrationTestCase(IntegrationTestCase):
         chainstories.db.session.add(self.user)
         chainstories.db.session.commit()
 
+    def given_an_authenticated_user(self):
+        self.login(self.username, self.password)
+        return self
 
 class UserModelTestCase(IntegrationTestCase):
     def test_create_user(self):
@@ -111,41 +114,74 @@ class SnippetTestCase(UserIntegrationTestCase):
 
 
 class StoryTestCase(UserIntegrationTestCase):
-    def test_create_story(self):
-        self.login(self.username, self.password)
-
+    def given_a_parent_snippet(self):
         rv = self.app.post("/snippet.json", data = {
             "text": "Once upon a time...",
         }, follow_redirects = True)
-        parent_snippet = json.loads(rv.data)["data"]
+        self.parent_snippet = json.loads(rv.data)["data"]
+        return self
 
+    def given_a_child_snippet(self):
         rv = self.app.post("/snippet.json", data = {
             "text": "The End.",
-            "parent_id": parent_snippet["id"]
+            "parent_id": self.parent_snippet["id"]
         }, follow_redirects = True)
-        child_snippet = json.loads(rv.data)["data"]
+        self.child_snippet = json.loads(rv.data)["data"]
+        return self
 
+    def when_I_create_a_story_with_the_parent_snippet(self):                
         rv = self.app.post("/story.json", data = {
-            "snippet_id": parent_snippet["id"]
+            "snippet_id": self.parent_snippet["id"]
         })
-        story = json.loads(rv.data)["data"]
+        self.story = json.loads(rv.data)["data"]
+        return self
 
-        assert parent_snippet["text"] == story["text"]
-        
-        rv = self.app.post("/story/%s/snippets.json" % story["id"], data = {
-            "snippet_id": child_snippet["id"]
-        })
-        snippets = json.loads(rv.data)["data"]
+    def then_story_text_should_equal_parent_snippet_text(self):
+        assert self.parent_snippet["text"] == self.story["text"]
+        return self
 
-        assert len([x for x in snippets if x["id"] == child_snippet["id"]]) == 1
-        assert len([x for x in snippets if x["text"] == child_snippet["text"]]) > 0
+    def when_I_add_the_child_snippet_to_the_story(self):
+        rv = self.app.post("/story/%s/snippets.json" % self.story["id"],
+            data = { "snippet_id": self.child_snippet["id"] })
+        self.snippets = json.loads(rv.data)["data"]
+        return self
 
-        expected_text = parent_snippet["text"] + " " + child_snippet["text"]
-        story = json.loads(self.app.get("/story/%s.json" % story["id"]).data)["data"]
+    def then_story_snippets_should_contain_child_snippet(self):
+        assert len([x for x in self.snippets
+            if x["id"] == self.child_snippet["id"]]) == 1
+        assert len([x for x in self.snippets
+            if x["text"] == self.child_snippet["text"]]) > 0
+
+    def then_story_should_consist_of_parent_and_child_snippet(self):
+        expected_text = "%s %s" % (
+            self.parent_snippet["text"],
+            self.child_snippet["text"]
+        )
+        story = json.loads(
+            self.app.get("/story/%s.json" % self.story["id"]).data
+        )["data"]
         assert story["text"] == expected_text
-        
-        rv = self.app.get("/story/%s" % story["id"])
+
+        rv = self.app.get("/story/%s" % self.story["id"])
         assert expected_text in rv.data
+
+        return self
+        
+    def test_create_simple_story(self):
+        (self.given_an_authenticated_user()
+             .given_a_parent_snippet()
+             .when_I_create_a_story_with_the_parent_snippet()
+             .then_story_text_should_equal_parent_snippet_text()
+        )
+
+    def test_create_composite_story(self):
+        (self.given_an_authenticated_user()
+             .given_a_parent_snippet()
+             .given_a_child_snippet()
+             .when_I_create_a_story_with_the_parent_snippet()
+             .when_I_add_the_child_snippet_to_the_story()
+             .then_story_should_consist_of_parent_and_child_snippet()
+        )
 
 
 class HomeTestCase(IntegrationTestCase):
