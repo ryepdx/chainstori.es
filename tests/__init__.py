@@ -6,11 +6,6 @@ import accesstoken
 import user.models
 import accesstoken.models
 
-class Struct:
-    def __init__(self, **entries): 
-        self.__dict__.update(entries)
-
-
 class AccessTokenGenerationTestCase(unittest.TestCase):
     def test_token_generation(self):
         token = accesstoken.generate_token(
