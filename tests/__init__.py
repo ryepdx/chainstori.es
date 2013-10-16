@@ -1,5 +1,5 @@
 import os
-import tempfile
+import json
 import unittest
 import chainstories
 import accesstoken
@@ -7,6 +7,8 @@ import user.models
 import accesstoken.models
 import snippet
 import snippet.models
+import story
+import story.models
 
 class AccessTokenGenerationTestCase(unittest.TestCase):
     def test_token_generation(self):
@@ -92,12 +94,59 @@ class AccessTokenModelTestCase(UserIntegrationTestCase):
 class SnippetTestCase(UserIntegrationTestCase):
     def test_create_snippets(self):
         self.login(self.username, self.password)
-        rv = self.app.post("/snippet", data = {
+        rv = self.app.post("/snippet.json", data = {
             "text": "Some text."
         }, follow_redirects = True)
+        
+        json_data = json.loads(rv.data)["data"]
+        assert "Some text." == json_data["text"]
 
+        rv = self.app.post("/snippet", data = {
+            "text": "More text.",
+            "parent_id": json_data["id"]
+        }, follow_redirects = True)
+
+        assert "More text." in rv.data
         assert snippet.CREATED_MESSAGE in rv.data
-        assert "Some text." in rv.data
+
+
+class StoryTestCase(UserIntegrationTestCase):
+    def test_create_story(self):
+        self.login(self.username, self.password)
+
+        rv = self.app.post("/snippet.json", data = {
+            "text": "Once upon a time...",
+        }, follow_redirects = True)
+        parent_snippet = json.loads(rv.data)["data"]
+
+        rv = self.app.post("/snippet.json", data = {
+            "text": "The End.",
+            "parent_id": parent_snippet["id"]
+        }, follow_redirects = True)
+        child_snippet = json.loads(rv.data)["data"]
+
+        rv = self.app.post("/story.json", data = {
+            "snippet_id": parent_snippet["id"]
+        })
+        story = json.loads(rv.data)["data"]
+
+        assert parent_snippet["text"] == story["text"]
+        
+        rv = self.app.post("/story/%s/snippets.json" % story["id"], data = {
+            "snippet_id": child_snippet["id"]
+        })
+        snippets = json.loads(rv.data)["data"]
+
+        assert len([x for x in snippets if x["id"] == child_snippet["id"]]) == 1
+        assert len([x for x in snippets if x["text"] == child_snippet["text"]]) > 0
+
+        expected_text = parent_snippet["text"] + " " + child_snippet["text"]
+        story = json.loads(self.app.get("/story/%s.json" % story["id"]).data)["data"]
+        assert story["text"] == expected_text
+        
+        rv = self.app.get("/story/%s" % story["id"])
+        assert expected_text in rv.data
+
 
 class HomeTestCase(IntegrationTestCase):
     def test_empty_db(self):

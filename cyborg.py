@@ -16,7 +16,7 @@ class Cyborg(object):
     def __getattr__(self, attr):
         attrs = attr.split('.')
         attr_root = attrs.pop(0)
-        module_path = os.path.dirname(self.module.__file__)
+        import_path = self.import_path + [attr_root]
 
         try:
             if hasattr(self.module, "__getattr__"):
@@ -27,16 +27,21 @@ class Cyborg(object):
             else:
                 cyborg = getattr(self.module, attr_root)
         except AttributeError:
+            module_path = os.path.dirname(self.module.__file__)
+
             if not (os.path.exists(module_path + '/' + attr_root + ".py")
             or os.path.exists(module_path + '/' + attr_root + "/__init__.py")):
                 raise
-            import_path = self.import_path + [attr_root]
+        
             __import__('.'.join(import_path))
 
             cyborg = Cyborg(sys.modules['.'.join(import_path)
                 ], import_path = import_path)
                 
         if attrs:
+            if not isinstance(cyborg, Cyborg):
+                cyborg = Cyborg(cyborg, import_path = import_path)
+
             return cyborg.__getattr__('.'.join(attrs))
         return cyborg
 

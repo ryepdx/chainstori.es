@@ -9,7 +9,7 @@ class Snippet(db.Model):
     )
     parent_id = db.Column(db.Integer, db.ForeignKey('snippet.id'), nullable = True)
     children = db.relationship('Snippet',
-        backref = db.backref('parent', lazy = 'select'),
+        backref = db.backref('parent', lazy = 'select', uselist = False),
         remote_side = [id]
     )
 

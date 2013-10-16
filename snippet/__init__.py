@@ -18,8 +18,8 @@ class SnippetHandler(object):
                 "id": self.snippet.id,
                 "text": self.snippet.text,
                 "parent": {} if not self.snippet.parent else {
-                    "id": self.snippet.parent[0].id,
-                    "href": "/snippet/%s" % self.snippet.parent[0].id
+                    "id": self.snippet.parent.id,
+                    "href": "/snippet/%s" % self.snippet.parent.id
                 },
                 "children": {} if not self.snippet.children else {
                     "data": [ {
@@ -41,7 +41,7 @@ def __getattr__(snippet_id):
     snippet_obj = Snippet.query.get(snippet_id)
 
     if not snippet_obj:
-        raise DynamicAttributeError
+        raise DynamicAttributeError("Could not find snippet %s" % snippet_id)
 
     return SnippetHandler(snippet_obj)
 
