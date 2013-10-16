@@ -32,7 +32,9 @@ class SnippetHandler(object):
         }
 
     def human(self, request):
-        return flask.render_template("snippet.html", **self.machine(request))
+        return flask.render_template(
+            "snippet.html", **self.machine(request)["data"]
+        )
 
 
 def __getattr__(snippet_id):

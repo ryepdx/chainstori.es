@@ -95,8 +95,9 @@ class SnippetTestCase(UserIntegrationTestCase):
         rv = self.app.post("/snippet", data = {
             "text": "Some text."
         }, follow_redirects = True)
-        assert snippet.CREATED_MESSAGE in rv.data
 
+        assert snippet.CREATED_MESSAGE in rv.data
+        assert "Some text." in rv.data
 
 class HomeTestCase(IntegrationTestCase):
     def test_empty_db(self):
