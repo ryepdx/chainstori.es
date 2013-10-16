@@ -5,6 +5,8 @@ import chainstories
 import accesstoken
 import user.models
 import accesstoken.models
+import snippet
+import snippet.models
 
 class AccessTokenGenerationTestCase(unittest.TestCase):
     def test_token_generation(self):
@@ -49,6 +51,16 @@ class IntegrationTestCase(unittest.TestCase):
         return self.app.post('/user', data = userdata, follow_redirects = True)
 
 
+class UserIntegrationTestCase(IntegrationTestCase):
+    def setUp(self):
+        super(UserIntegrationTestCase, self).setUp()
+        self.username = "username"
+        self.password = "password"
+        self.user = user.models.User(self.username, self.password)
+        chainstories.db.session.add(self.user)
+        chainstories.db.session.commit()
+
+
 class UserModelTestCase(IntegrationTestCase):
     def test_create_user(self):
         username = "username"
@@ -66,13 +78,7 @@ class UserModelTestCase(IntegrationTestCase):
         assert found_obj.check_password(password)
 
 
-class AccessTokenModelTestCase(IntegrationTestCase):
-    def setUp(self):
-        super(AccessTokenModelTestCase, self).setUp()
-        self.user = user.models.User("username", "passhash")
-        chainstories.db.session.add(self.user)
-        chainstories.db.session.commit()
-
+class AccessTokenModelTestCase(UserIntegrationTestCase):
     def test_create_access_token(self):
         token = accesstoken.models.AccessToken(
             self.user, accesstoken.generate_token())
@@ -82,6 +88,15 @@ class AccessTokenModelTestCase(IntegrationTestCase):
         assert self.user.get_auth_token() == token.token
         assert token.user == self.user
     
+
+class SnippetTestCase(UserIntegrationTestCase):
+    def test_create_snippets(self):
+        self.login(self.username, self.password)
+        rv = self.app.post("/snippet", data = {
+            "text": "Some text."
+        }, follow_redirects = True)
+        assert snippet.CREATED_MESSAGE in rv.data
+
 
 class HomeTestCase(IntegrationTestCase):
     def test_empty_db(self):
