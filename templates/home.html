@@ -1,5 +1,30 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% if not logged_in %}
+<div class="col-md-6">
+    <h1>Login</h1>
+    <form class="form-horizontal" action="/accesstoken" method="post" role="form">
+        <div class="form-group">
+            <label for="username" class="col-lg-2 control-label">Username</label>
+            <div class="col-lg-10">
+                <input type="text" id="username" class="form-control" name="username" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="password" class="col-lg-2 control-label">Password</label>
+            <div class="col-lg-10">
+                <input type="password" id="password" class="form-control" name="password" />
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-lg-offset-2 col-lg-10">
+                <button type="submit" class="btn btn-default">Login</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% else %}
 No stories yet!
+{% endif %}
 {% endblock %}
