@@ -1,22 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
         <title>chainstori.es</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+        <script src="//code.jquery.com/jquery.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
     </head>
     <body>
-        <div>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul class="flashes">
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-        </div>
-        <div>
-            {% block content %}{% endblock %}
+        <div class="container">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div class="row">
+                    {% for message in messages %}
+                        <div class="alert alert-info">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+            <div class="row">
+                {% block content %}{% endblock %}
+            </div>
         </div>
     </body>
 </html>
