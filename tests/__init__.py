@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import unittest
 import chainstories
 import accesstoken
@@ -12,6 +13,8 @@ import story.models
 
 import nose.tools
 from nose.tools import ok_
+
+LOGGER = logging.getLogger(__name__)
 
 def eq_(thing1, thing2, msg = None):
     """Nose.tools.eq_ with a helpful default message"""
@@ -158,7 +161,11 @@ class StoryTestCase(UserIntegrationTestCase):
     def when_I_add_the_child_snippet_to_the_story(self):
         rv = self.app.post("/story/%s/snippets.json" % self.story["id"],
             data = { "snippet_id": self.child_snippet["id"] })
-        self.snippets = json.loads(rv.data)["data"]
+        try:
+            self.snippets = json.loads(rv.data)["data"]
+        except ValueError:
+            LOGGER.error("Could not load JSON from '%s'" % rv.data)
+            raise
         return self
 
     def then_story_snippets_should_contain_child_snippet(self):
