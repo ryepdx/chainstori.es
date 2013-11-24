@@ -11,6 +11,7 @@ import story
 import story.models
 
 import nose.tools
+from nose.tools import ok_
 
 def eq_(thing1, thing2, msg = None):
     """Nose.tools.eq_ with a helpful default message"""
