@@ -213,7 +213,7 @@ class StoryTestCase(UserIntegrationTestCase):
 class HomeTestCase(IntegrationTestCase):
     def test_empty_db(self):
         rv = self.app.get('/home')
-        in_('No stories yet!', rv.data)
+        in_('Login', rv.data)
 
 
 class UserUITestCase(IntegrationTestCase):
