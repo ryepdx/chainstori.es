@@ -56,12 +56,13 @@ class Cyborg(object):
     def _fetch_response(self, consumer, module, request):
         http_method = request.method.lower()
 
-        if not hasattr(module, http_method):
+        try:
+            module.__getattr__(http_method)
+        except AttributeError:
             valid_methods = [func[0].upper()
                 for func in inspect.getmembers(
                 module, predicate = inspect.isfunction)
             ]
-
             raise werkzeug.exceptions.MethodNotAllowed(
                 valid_methods = valid_methods)
 
