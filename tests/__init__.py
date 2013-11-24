@@ -10,14 +10,28 @@ import snippet.models
 import story
 import story.models
 
+import nose.tools
+
+def eq_(thing1, thing2, msg = None):
+    """Nose.tools.eq_ with a helpful default message"""
+    return nose.tools.eq_(thing1, thing2,
+        msg = (msg if msg != None else "'%s' != '%s'" % (thing1, thing2))
+    )
+
+def in_(needle, haystack, msg = None):
+    """Helper function for the ok_(x in y) pattern, with a default message"""
+    return nose.tools.ok_(needle in haystack,
+        msg = (msg if msg != None else "'%s' not in '%s'" % (needle, haystack))
+    )
+
 class AccessTokenGenerationTestCase(unittest.TestCase):
     def test_token_generation(self):
         token = accesstoken.generate_token(
             chars = accesstoken.TOKEN_CHARS,
             size = accesstoken.TOKEN_SIZE
         )
-        assert len(token) == accesstoken.TOKEN_SIZE
-        assert len([x for x in token if x not in accesstoken.TOKEN_CHARS]) == 0
+        eq_(len(token), accesstoken.TOKEN_SIZE)
+        eq_(len([x for x in token if x not in accesstoken.TOKEN_CHARS]), 0)
 
 
 class IntegrationTestCase(unittest.TestCase):
@@ -78,9 +92,9 @@ class UserModelTestCase(IntegrationTestCase):
         found_obj = user.models.User.query.filter_by(
             username = username).first()
 
-        assert found_obj != None
-        assert found_obj == user_obj
-        assert found_obj.check_password(password)
+        ok_(found_obj != None)
+        eq_(found_obj, user_obj)
+        ok_(found_obj.check_password(password))
 
 
 class AccessTokenModelTestCase(UserIntegrationTestCase):
@@ -90,8 +104,8 @@ class AccessTokenModelTestCase(UserIntegrationTestCase):
         chainstories.db.session.add(token)
         chainstories.db.session.commit()
 
-        assert self.user.get_auth_token() == token.token
-        assert token.user == self.user
+        eq_(self.user.get_auth_token(), token.token)
+        eq_(token.user, self.user)
     
 
 class SnippetTestCase(UserIntegrationTestCase):
@@ -102,14 +116,14 @@ class SnippetTestCase(UserIntegrationTestCase):
         }, follow_redirects = True)
         
         json_data = json.loads(rv.data)["data"]
-        assert "Some text." == json_data["text"]
+        eq_("Some text.", json_data["text"])
 
         rv = self.app.post("/snippet", data = {
             "text": "More text.",
             "parent_id": json_data["id"]
         }, follow_redirects = True)
 
-        assert "More text." in rv.data
+        in_("More text.", rv.data)
         assert snippet.CREATED_MESSAGE in rv.data
 
 
@@ -137,7 +151,7 @@ class StoryTestCase(UserIntegrationTestCase):
         return self
 
     def then_story_text_should_equal_parent_snippet_text(self):
-        assert self.parent_snippet["text"] == self.story["text"]
+        eq_(self.parent_snippet["text"], self.story["text"])
         return self
 
     def when_I_add_the_child_snippet_to_the_story(self):
@@ -147,10 +161,21 @@ class StoryTestCase(UserIntegrationTestCase):
         return self
 
     def then_story_snippets_should_contain_child_snippet(self):
-        assert len([x for x in self.snippets
-            if x["id"] == self.child_snippet["id"]]) == 1
-        assert len([x for x in self.snippets
-            if x["text"] == self.child_snippet["text"]]) > 0
+        ok_(len([x for x in self.snippets
+            if x["id"] == self.child_snippet["id"]]) == 1,
+            msg = "Could not find ID '%s' in '%s'" % (
+                self.child_snippet["id"], 
+                "','".join([x["id"] for x in self.snippets])
+            )
+        )
+
+        ok_(len([x for x in self.snippets
+            if x["text"] == self.child_snippet["text"]]) > 0,
+            msg = "Could not find '%s' in '%s'" % (
+                self.child_snippet["text"], 
+                "','".join([x["text"] for x in self.snippets])
+            )
+        )
 
     def then_story_should_consist_of_parent_and_child_snippet(self):
         expected_text = "%s %s" % (
@@ -160,10 +185,10 @@ class StoryTestCase(UserIntegrationTestCase):
         story = json.loads(
             self.app.get("/story/%s.json" % self.story["id"]).data
         )["data"]
-        assert story["text"] == expected_text
+        eq_(story["text"], expected_text)
 
         rv = self.app.get("/story/%s" % self.story["id"])
-        assert expected_text in rv.data
+        in_(expected_text, rv.data)
 
         return self
         
@@ -187,29 +212,29 @@ class StoryTestCase(UserIntegrationTestCase):
 class HomeTestCase(IntegrationTestCase):
     def test_empty_db(self):
         rv = self.app.get('/home')
-        assert 'No stories yet!' in rv.data
+        in_('No stories yet!', rv.data)
 
 
 class UserUITestCase(IntegrationTestCase):
     def test_user_signup_and_login(self):
         rv = self.app.post("/user", follow_redirects = True)
-        assert "Missing parameters." in rv.data
+        in_("Missing parameters.", rv.data)
 
         rv = self.login('badusername','badpassword')
-        assert 'Invalid username or password!' in rv.data
+        in_('Invalid username or password!', rv.data)
 
         rv = self.signup('goodusername', 'goodpassword')
-        assert user.WELCOME_GREETING in rv.data
+        in_(user.WELCOME_GREETING, rv.data)
 
         rv = self.logout()
-        assert accesstoken.LOGGED_OUT in rv.data
+        in_(accesstoken.LOGGED_OUT, rv.data)
 
         rv = self.login("goodusername", "goodpassword")
-        assert accesstoken.LOGGED_IN in rv.data
+        in_(accesstoken.LOGGED_IN, rv.data)
 
     def test_user_signup_and_profile(self):
         rv = self.signup("user1", "password1")
-        assert user.WELCOME_GREETING in rv.data
+        in_(user.WELCOME_GREETING, rv.data)
 
         rv = self.app.get("/user/user1")
-        assert "This user has not written anything yet!" in rv.data
+        in_("This user has not written anything yet!", rv.data)

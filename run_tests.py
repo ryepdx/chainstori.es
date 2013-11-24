@@ -1,4 +1,2 @@
-import unittest
-from tests import *
-
-unittest.main()
+import nose
+nose.main()
