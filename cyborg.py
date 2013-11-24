@@ -21,7 +21,14 @@ class Cyborg(object):
         try:
             if hasattr(self.module, "__getattr__"):
                 try:
-                    cyborg = self.module.__getattr__(attr_root)
+                    # Avoid collisions with dynamic attributes and static ones.
+                    # The assumption here is that every attribute path ends in
+                    # a static attribute. 
+                    if len(attrs) == 0 and hasattr(self.module, attr_root):
+                        cyborg = getattr(self.module, attr_root)
+                    else:
+                        cyborg = self.module.__getattr__(attr_root)
+                    
                 except DynamicAttributeError:
                     cyborg = getattr(self.module, attr_root)
             else:
