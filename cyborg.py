@@ -57,12 +57,13 @@ class Cyborg(object):
         http_method = request.method.lower()
 
         try:
-            module.__getattr__(http_method)
+            getattr(module, http_method)
         except AttributeError:
             valid_methods = [func[0].upper()
                 for func in inspect.getmembers(
                 module, predicate = inspect.isfunction)
             ]
+
             raise werkzeug.exceptions.MethodNotAllowed(
                 valid_methods = valid_methods)
 
