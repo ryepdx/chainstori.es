@@ -13,6 +13,9 @@ class Cyborg(object):
         self.module = module
         self.import_path = import_path
 
+    def __call__(self, *args, **kwargs):
+        return self.module(*args, **kwargs)
+
     def __getattr__(self, attr):
         attrs = attr.split('.')
         attr_root = attrs.pop(0)
@@ -41,14 +44,12 @@ class Cyborg(object):
                 raise
         
             __import__('.'.join(import_path))
+            cyborg = sys.modules['.'.join(import_path)]
+        
+        # Make our cyborg variable an actual Cyborg object.        
+        cyborg = Cyborg(cyborg, import_path = import_path)
 
-            cyborg = Cyborg(sys.modules['.'.join(import_path)
-                ], import_path = import_path)
-                
         if attrs:
-            if not isinstance(cyborg, Cyborg):
-                cyborg = Cyborg(cyborg, import_path = import_path)
-
             return cyborg.__getattr__('.'.join(attrs))
         return cyborg
 
