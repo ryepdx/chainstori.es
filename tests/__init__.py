@@ -217,12 +217,6 @@ class StoryTestCase(UserIntegrationTestCase):
         )
 
 
-class HomeTestCase(IntegrationTestCase):
-    def test_empty_db(self):
-        rv = self.app.get('/home')
-        in_('Login', rv.data)
-
-
 class UserUITestCase(IntegrationTestCase):
     def test_user_signup_and_login(self):
         rv = self.app.post("/user", follow_redirects = True)
